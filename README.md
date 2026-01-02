@@ -16,7 +16,7 @@
     - Vous devrez également télécharger et installer le **Fabric API** pour que le mod fonctionne correctement.
 
 2. **Téléchargez le mod** :
-    - Rendez-vous sur la page du mod (ou le site où vous l'avez trouvé) et téléchargez le fichier `.jar` du mod **ItemReader**.
+   - Vous pouvez télécharger le mod (fichier `.jar`) de **ItemReader** directement depuis [ce lien GitHub](https://github.com/Tendoskria/minecraft-item-reader/releases/tag/1.0.0).
 
 3. **Placez le fichier du mod** :
     - Déplacez le fichier `.jar` dans le dossier `mods` de votre installation Minecraft.
@@ -30,7 +30,7 @@
 1. **Ouvrez Minecraft et tenez un objet** dans votre main.
 2. **Appuyez sur la touche définie** pour récupérer les informations. Par défaut, la touche est `G`, mais vous pouvez la configurer dans les paramètres du jeu.
 
-3. **Le JSON est copié dans votre presse-papiers** ! Une fois la touche pressée, toutes les informations détaillées de l'objet seront copiées dans votre presse-papiers sous forme de JSON. Vous pouvez ensuite les coller où vous le souhaitez (dans un fichier, sur un forum, etc.).
+3. **Le JSON est copié dans votre presse-papiers** ! Une fois la touche pressée, toutes les informations détaillées de l'objet seront copiées dans votre presse-papiers sous forme de JSON. Vous pouvez ensuite les coller où vous le souhaitez.
 
    Exemple de ce que vous pourriez obtenir :
 
