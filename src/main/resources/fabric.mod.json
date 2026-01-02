@@ -1,0 +1,37 @@
+{
+	"schemaVersion": 1,
+	"id": "itemreader",
+	"version": "${version}",
+	"name": "ItemReader",
+	"description": "Un mod qui permet de récupérer le text d'un item",
+	"authors": [
+		"Tendoskria"
+	],
+	"contact": {
+		"homepage": "https://fabricmc.net/",
+		"sources": "https://github.com/FabricMC/fabric-example-mod"
+	},
+	"license": "MIT",
+	"icon": "assets/itemreader/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"fr.mendes.itemreader.ItemReaderMod"
+		],
+		"fabric-datagen": [
+			"fr.mendes.itemreader.ItemReaderModDataGenerator"
+		],
+		"client": [
+			"fr.mendes.itemreader.ItemReaderModClient"
+		]
+	},
+	"mixins": [
+		"itemreader.mixins.json"
+	],
+	"depends": {
+		"fabricloader": ">=0.18.4",
+		"minecraft": "~1.21.4",
+		"java": ">=21",
+		"fabric-api": "*"
+	}
+}
