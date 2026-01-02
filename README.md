@@ -9,6 +9,10 @@
 - **Enchanteurs à l'honneur** : Les enchantements de l'objet sont aussi extraits, avec leur niveau et leur couleur.
 - **Lore et enchantements personnalisés** : Si votre objet a une histoire ou des enchantements personnalisés dans son lore, ceux-ci seront également pris en compte.
 
+## Version minimale supportée
+
+Le mod ItemReader est compatible à partir de la version Minecraft 1.21.0. Veuillez vous assurer que vous utilisez cette version ou une version plus récente pour garantir le bon fonctionnement du mod.
+
 ## Installation
 
 1. **Téléchargez et installez Fabric** :
