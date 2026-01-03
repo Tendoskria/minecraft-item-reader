@@ -7,6 +7,7 @@ import com.google.gson.JsonObject;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.component.DataComponentTypes;
@@ -138,7 +139,7 @@ public class ItemReaderModClient implements ClientModInitializer {
                             }
 
                             String jsonString = GSON.toJson(jsonOutput);
-                            copyToClipboard(jsonString);
+                            copyToClipboard(client, jsonString);
                             client.player.sendMessage(Text.literal("§aJSON copied to clipboard!"), false);
 
                         } catch (Exception e) {
@@ -371,11 +372,12 @@ public class ItemReaderModClient implements ClientModInitializer {
     /**
      * Copies text to system clipboard
      */
-    private void copyToClipboard(String text) {
+    private void copyToClipboard(MinecraftClient client, String text) {
         try {
             System.out.println(text);
-            StringSelection selection = new StringSelection(text);
-            Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, selection);
+            if (client != null && client.keyboard != null) {
+                client.keyboard.setClipboard(text);
+            }
         } catch (Exception e) {
             System.err.println("Failed to copy to clipboard: " + e.getMessage());
         }
