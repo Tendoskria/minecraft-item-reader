@@ -17,6 +17,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
+import org.apache.logging.log4j.util.Strings;
 import org.lwjgl.glfw.GLFW;
 
 import java.awt.*;
@@ -158,12 +159,11 @@ public class ItemReaderModClient implements ClientModInitializer {
      * Gets the enchantment name from RegistryEntry
      */
     private String getEnchantmentName(RegistryEntry<Enchantment> enchantment) {
-        var key = enchantment.getKey();
-        if (key.isPresent()) {
-            String path = key.get().getValue().getPath();
-            return toCamelCase(path);
+        String[] parts = enchantment.value().toString().split("Enchantment ");
+        if (parts.length > 1) {
+            return parts[1];
         }
-        return enchantment.toString();
+        return Strings.EMPTY;
     }
 
     /**
