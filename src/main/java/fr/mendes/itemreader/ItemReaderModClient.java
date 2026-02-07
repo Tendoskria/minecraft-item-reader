@@ -56,6 +56,12 @@ public class ItemReaderModClient implements ClientModInitializer {
                             JsonObject jsonOutput = new JsonObject();
                             JsonArray enchantmentsArray = new JsonArray();
 
+                            // Add version info
+                            jsonOutput.addProperty("mod-version", net.fabricmc.loader.api.FabricLoader.getInstance()
+                                    .getModContainer("itemreader")
+                                    .map(modContainer -> modContainer.getMetadata().getVersion().getFriendlyString())
+                                    .orElse("unknown"));
+
                             // Get custom name
                             if (heldItem.contains(DataComponentTypes.CUSTOM_NAME)) {
                                 Text customName = heldItem.get(DataComponentTypes.CUSTOM_NAME);
@@ -219,6 +225,7 @@ public class ItemReaderModClient implements ClientModInitializer {
 
     /**
      * Recursively appends text with its style converted to HTML
+     * UPDATED: Now includes support for obfuscated style
      */
     private void appendTextWithStyle(Text text, StringBuilder html) {
         String literalContent = "";
@@ -244,6 +251,12 @@ public class ItemReaderModClient implements ClientModInitializer {
             return;
         }
 
+        // Check for obfuscated style first - it wraps everything else
+        boolean isObfuscated = style.isObfuscated();
+        if (isObfuscated && (hasContent || hasSiblings)) {
+            html.append("<span data-obfuscated=\"true\"");
+        }
+
         boolean hasSpan = false;
         StringBuilder spanStyle = new StringBuilder();
 
@@ -256,7 +269,13 @@ public class ItemReaderModClient implements ClientModInitializer {
             hasSpan = true;
         }
 
-        if (hasSpan && (hasContent || hasSiblings)) {
+        // If we have obfuscated, add the style attribute to the same span
+        if (isObfuscated && (hasContent || hasSiblings)) {
+            if (spanStyle.length() > 0) {
+                html.append(" style=\"").append(spanStyle).append("\"");
+            }
+            html.append(">");
+        } else if (hasSpan && (hasContent || hasSiblings)) {
             html.append("<span style=\"").append(spanStyle).append("\">");
         }
 
@@ -300,7 +319,10 @@ public class ItemReaderModClient implements ClientModInitializer {
             html.append("</strong>");
         }
 
-        if (hasSpan && (hasContent || hasSiblings)) {
+        // Close the span - either obfuscated or color span
+        if (isObfuscated && (hasContent || hasSiblings)) {
+            html.append("</span>");
+        } else if (hasSpan && (hasContent || hasSiblings)) {
             html.append("</span>");
         }
     }

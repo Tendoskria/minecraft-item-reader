@@ -20,7 +20,7 @@ Le mod ItemReader est compatible à partir de la version Minecraft 1.21.0. Veuil
     - Vous devrez également télécharger et installer le **Fabric API** pour que le mod fonctionne correctement.
 
 2. **Téléchargez le mod** :
-   - Vous pouvez télécharger le mod (fichier `.jar`) de **ItemReader** directement depuis [ce lien GitHub](https://github.com/Tendoskria/minecraft-item-reader/releases/tag/1.0.2).
+   - Vous pouvez télécharger le mod (fichier `.jar`) de **ItemReader** directement depuis [ce lien GitHub](https://github.com/Tendoskria/minecraft-item-reader/releases/tag/1.0.3).
 
 3. **Placez le fichier du mod** :
     - Déplacez le fichier `.jar` dans le dossier `mods` de votre installation Minecraft.
