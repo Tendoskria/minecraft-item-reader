@@ -20,7 +20,7 @@ Le mod ItemReader est compatible à partir de la version Minecraft 1.21.0. Veuil
     - Vous devrez également télécharger et installer le **Fabric API** pour que le mod fonctionne correctement.
 
 2. **Téléchargez le mod** :
-   - Vous pouvez télécharger le mod (fichier `.jar`) de **ItemReader** directement depuis [ce lien GitHub](https://github.com/Tendoskria/minecraft-item-reader/releases/tag/1.0.3).
+   - Vous pouvez télécharger le mod (fichier `.jar`) de **ItemReader** directement depuis [ce lien GitHub](https://github.com/Tendoskria/minecraft-item-reader/releases/tag/1.0.4).
 
 3. **Placez le fichier du mod** :
     - Déplacez le fichier `.jar` dans le dossier `mods` de votre installation Minecraft.
@@ -29,7 +29,7 @@ Le mod ItemReader est compatible à partir de la version Minecraft 1.21.0. Veuil
 4. **Lancez Minecraft avec Fabric** :
     - Ouvrez le lanceur Minecraft et assurez-vous de sélectionner le profil **Fabric** pour lancer le jeu.
 
-## Utilisation
+## Utilisation 1 - Récupérer les informations d'un objet
 
 1. **Ouvrez Minecraft et tenez un objet** dans votre main.
 2. **Appuyez sur la touche définie** pour récupérer les informations. Par défaut, la touche est `G`, mais vous pouvez la configurer dans les paramètres du jeu.
@@ -59,6 +59,12 @@ Le mod ItemReader est compatible à partir de la version Minecraft 1.21.0. Veuil
     ```
    
 4. **C'est tout** ! Vous avez maintenant un fichier JSON avec toutes les informations de l'objet que vous tenez.
+
+## Utilisation 2 - Récupérer les informations de plusieurs objets dans un container
+
+1. **Ouvrez un container** (comme un coffre, une shulker, etc.) et placez les objets que vous souhaitez analyser dans les slots.
+2. **Appuyez sur la touche définie** pour récupérer les informations de tous les objets présents dans le container. Par défaut, la touche est `W`, mais vous pouvez la configurer dans les paramètres du jeu.
+3. Une liste des items s'affichera dans la console du jeu, vous n'aurez plus qu'à cliquer sur les noms des items pour copier les informations sous forme de JSON de chacun d'eux dans votre presse-papiers.
 
 ## Personnalisation des raccourcis
 

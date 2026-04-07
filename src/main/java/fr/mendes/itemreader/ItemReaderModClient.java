@@ -7,7 +7,11 @@ import com.google.gson.JsonObject;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
+import net.fabricmc.fabric.api.client.screen.v1.ScreenKeyboardEvents;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.screen.ingame.GenericContainerScreen;
+import net.minecraft.client.gui.screen.ingame.ShulkerBoxScreen;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.component.DataComponentTypes;
@@ -15,13 +19,15 @@ import net.minecraft.component.type.ItemEnchantmentsComponent;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.item.ItemStack;
 import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.screen.ScreenHandler;
+import net.minecraft.screen.slot.Slot;
+import net.minecraft.text.ClickEvent;
+import net.minecraft.text.MutableText;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import org.apache.logging.log4j.util.Strings;
 import org.lwjgl.glfw.GLFW;
 
-import java.awt.*;
-import java.awt.datatransfer.StringSelection;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -29,6 +35,7 @@ import java.util.regex.Pattern;
 
 public class ItemReaderModClient implements ClientModInitializer {
     private static KeyBinding getItemTextKey;
+
     private static final Gson GSON = new GsonBuilder()
             .setPrettyPrinting()
             .disableHtmlEscaping()
@@ -39,6 +46,7 @@ public class ItemReaderModClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
+        // ── G key: read item in hand (works only outside a GUI, unchanged) ──
         getItemTextKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
                 "key.itemreader.get_item_text",
                 InputUtil.Type.KEYSYM,
@@ -50,108 +58,13 @@ public class ItemReaderModClient implements ClientModInitializer {
             while (getItemTextKey.wasPressed()) {
                 if (client.player != null) {
                     ItemStack heldItem = client.player.getMainHandStack();
-
                     if (!heldItem.isEmpty()) {
                         try {
-                            JsonObject jsonOutput = new JsonObject();
-                            JsonArray enchantmentsArray = new JsonArray();
-
-                            // Add version info
-                            jsonOutput.addProperty("mod-version", net.fabricmc.loader.api.FabricLoader.getInstance()
-                                    .getModContainer("itemreader")
-                                    .map(modContainer -> modContainer.getMetadata().getVersion().getFriendlyString())
-                                    .orElse("unknown"));
-
-                            // Get custom name
-                            if (heldItem.contains(DataComponentTypes.CUSTOM_NAME)) {
-                                Text customName = heldItem.get(DataComponentTypes.CUSTOM_NAME);
-                                if (customName != null) {
-                                    String htmlName = trimHtml(textToHtml(customName));
-                                    jsonOutput.addProperty("minecraft:custom_name", htmlName);
-                                }
-                            }
-
-                            // Extract vanilla enchantments
-                            if (heldItem.contains(DataComponentTypes.ENCHANTMENTS)) {
-                                ItemEnchantmentsComponent enchantments = heldItem.get(DataComponentTypes.ENCHANTMENTS);
-                                if (enchantments != null) {
-                                    enchantments.getEnchantments().forEach(enchantment -> {
-                                        int level = enchantments.getLevel(enchantment);
-                                        String enchantName = getEnchantmentName(enchantment);
-
-                                        JsonObject enchantObj = new JsonObject();
-                                        enchantObj.addProperty("name", enchantName);
-                                        enchantObj.addProperty("level", level);
-                                        // Vanilla enchantments typically appear in gray color (#AAAAAA)
-                                        enchantObj.addProperty("color", "rgb(170, 170, 170)");
-
-                                        enchantmentsArray.add(enchantObj);
-                                    });
-                                }
-                            }
-
-                            // Extract custom enchantments from lore and build lore HTML
-                            List<String> loreLines = new ArrayList<>();
-                            if (heldItem.contains(DataComponentTypes.LORE)) {
-                                var lore = heldItem.get(DataComponentTypes.LORE);
-                                if (lore != null && !lore.lines().isEmpty()) {
-                                    for (Text loreLine : lore.lines()) {
-                                        String plainText = loreLine.getString();
-                                        String htmlLine = textToHtml(loreLine);
-
-                                        // Check if this line is a custom enchantment
-                                        Matcher matcher = ROMAN_NUMERAL_PATTERN.matcher(plainText.trim());
-                                        if (matcher.matches()) {
-                                            String enchantName = toCamelCase(matcher.group(1).trim());
-                                            String romanLevel = matcher.group(2);
-                                            int level = romanToInt(romanLevel);
-
-                                            // Extract color from the HTML
-                                            String color = extractColorFromHtml(htmlLine);
-
-                                            JsonObject enchantObj = new JsonObject();
-                                            enchantObj.addProperty("name", enchantName);
-                                            enchantObj.addProperty("level", level);
-                                            enchantObj.addProperty("color", color);
-
-                                            enchantmentsArray.add(enchantObj);
-                                        } else {
-                                            // Regular lore line, keep it
-                                            loreLines.add(htmlLine);
-                                        }
-                                    }
-                                }
-                            }
-
-                            // Build lore HTML (excluding custom enchantments)
-                            if (!loreLines.isEmpty()) {
-                                StringBuilder loreHtml = new StringBuilder("<p>");
-                                for (int i = 0; i < loreLines.size(); i++) {
-                                    if (i > 0) {
-                                        loreHtml.append("<br>");
-                                    }
-                                    loreHtml.append(loreLines.get(i));
-                                }
-                                loreHtml.append("</p>");
-                                jsonOutput.addProperty("minecraft:lore", trimHtml(loreHtml.toString()));
-                            }
-
-                            // Add enchantments array
-                            jsonOutput.add("minecraft:enchantments", enchantmentsArray);
-
-                            // Get item name (registry key)
-                            var registryKey = heldItem.getRegistryEntry().getKey();
-                            if (registryKey.isPresent()) {
-                                jsonOutput.addProperty("minecraft:item_name", registryKey.get().getValue().toString());
-                            }
-
-                            String jsonString = GSON.toJson(jsonOutput);
+                            String jsonString = buildItemJson(heldItem);
                             copyToClipboard(client, jsonString);
                             client.player.sendMessage(Text.literal("§aJSON copied to clipboard!"), false);
-
                         } catch (Exception e) {
                             client.player.sendMessage(Text.literal("§cError: " + e.getMessage()), false);
-                            e.printStackTrace();
                         }
                     } else {
                         client.player.sendMessage(Text.literal("§cNo item in hand!"), false);
@@ -159,6 +72,171 @@ public class ItemReaderModClient implements ClientModInitializer {
                 }
             }
         });
+
+        // ── W fr key: read container items via ScreenKeyboardEvents ─────────────
+        // ScreenKeyboardEvents fires even while a GUI screen is open,
+        // unlike KeyBinding which is blocked by Minecraft when a screen is active.
+        ScreenEvents.AFTER_INIT.register((client, screen, scaledWidth, scaledHeight) -> {
+            if (!(screen instanceof GenericContainerScreen)
+                    && !(screen instanceof ShulkerBoxScreen)) {
+                return; // only register on container screens
+            }
+
+            ScreenKeyboardEvents.afterKeyPress(screen).register((s, key, scancode, modifiers) -> {
+                if (key != GLFW.GLFW_KEY_Z) return;
+                if (client.player == null) return;
+
+                ScreenHandler handler;
+                int containerSlotCount;
+
+                if (s instanceof GenericContainerScreen gcs) {
+                    handler = gcs.getScreenHandler();
+                } else {
+                    ShulkerBoxScreen sbs = (ShulkerBoxScreen) s;
+                    handler = sbs.getScreenHandler();
+                }
+                containerSlotCount = handler.slots.size() - 36;
+
+                // Collect non-empty items from the container slots only
+                List<ItemStack> items = new ArrayList<>();
+                for (int i = 0; i < containerSlotCount; i++) {
+                    Slot slot = handler.slots.get(i);
+                    if (slot.hasStack() && !slot.getStack().isEmpty()) {
+                        items.add(slot.getStack());
+                    }
+                }
+
+                if (items.isEmpty()) {
+                    client.player.sendMessage(Text.literal("§eEmpty container!"), false);
+                    return;
+                }
+
+                // Header
+                client.player.sendMessage(
+                        Text.literal("§6§l[ItemReader] §r§7" + items.size()
+                                + " item(s) found. Click on a name to copy its JSON:"), false);
+
+                // One clickable line per item
+                for (ItemStack stack : items) {
+                    try {
+                        String jsonString = buildItemJson(stack);
+                        String displayName = stack.getName().getString();
+                        int count = stack.getCount();
+                        String label = (count > 1)
+                                ? "§b" + displayName + " §7(x" + count + ")"
+                                : "§b" + displayName;
+
+                        MutableText clickable = Text.literal(label)
+                                .setStyle(Style.EMPTY
+                                        .withClickEvent(new ClickEvent(
+                                                ClickEvent.Action.COPY_TO_CLIPBOARD,
+                                                jsonString))
+                                        .withUnderline(true));
+
+                        MutableText line = Text.literal("  ")
+                                .append(clickable)
+                                .append(Text.literal(" §8[click → copy JSON]"));
+
+                        client.player.sendMessage(line, false);
+                    } catch (Exception e) {
+                        client.player.sendMessage(
+                                Text.literal("§cError reading item: " + e.getMessage()), false);
+                    }
+                }
+            });
+        });
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // JSON builder (shared by both keys)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private String buildItemJson(ItemStack heldItem) {
+        JsonObject jsonOutput = new JsonObject();
+        JsonArray enchantmentsArray = new JsonArray();
+
+        // Add version info
+        jsonOutput.addProperty("mod-version", net.fabricmc.loader.api.FabricLoader.getInstance()
+                .getModContainer("itemreader")
+                .map(modContainer -> modContainer.getMetadata().getVersion().getFriendlyString())
+                .orElse("unknown"));
+
+        // Get custom name
+        if (heldItem.contains(DataComponentTypes.CUSTOM_NAME)) {
+            Text customName = heldItem.get(DataComponentTypes.CUSTOM_NAME);
+            if (customName != null) {
+                String htmlName = trimHtml(textToHtml(customName));
+                jsonOutput.addProperty("minecraft:custom_name", htmlName);
+            }
+        }
+
+        // Extract vanilla enchantments
+        if (heldItem.contains(DataComponentTypes.ENCHANTMENTS)) {
+            ItemEnchantmentsComponent enchantments = heldItem.get(DataComponentTypes.ENCHANTMENTS);
+            if (enchantments != null) {
+                enchantments.getEnchantments().forEach(enchantment -> {
+                    int level = enchantments.getLevel(enchantment);
+                    String enchantName = getEnchantmentName(enchantment);
+
+                    JsonObject enchantObj = new JsonObject();
+                    enchantObj.addProperty("name", enchantName);
+                    enchantObj.addProperty("level", level);
+                    enchantObj.addProperty("color", "rgb(170, 170, 170)");
+
+                    enchantmentsArray.add(enchantObj);
+                });
+            }
+        }
+
+        // Extract custom enchantments from lore and build lore HTML
+        List<String> loreLines = new ArrayList<>();
+        if (heldItem.contains(DataComponentTypes.LORE)) {
+            var lore = heldItem.get(DataComponentTypes.LORE);
+            if (lore != null && !lore.lines().isEmpty()) {
+                for (Text loreLine : lore.lines()) {
+                    String plainText = loreLine.getString();
+                    String htmlLine = textToHtml(loreLine);
+
+                    Matcher matcher = ROMAN_NUMERAL_PATTERN.matcher(plainText.trim());
+                    if (matcher.matches()) {
+                        String enchantName = toCamelCase(matcher.group(1).trim());
+                        String romanLevel = matcher.group(2);
+                        int level = romanToInt(romanLevel);
+                        String color = extractColorFromHtml(htmlLine);
+
+                        JsonObject enchantObj = new JsonObject();
+                        enchantObj.addProperty("name", enchantName);
+                        enchantObj.addProperty("level", level);
+                        enchantObj.addProperty("color", color);
+
+                        enchantmentsArray.add(enchantObj);
+                    } else {
+                        loreLines.add(htmlLine);
+                    }
+                }
+            }
+        }
+
+        // Build lore HTML (excluding custom enchantments)
+        if (!loreLines.isEmpty()) {
+            StringBuilder loreHtml = new StringBuilder("<p>");
+            for (int i = 0; i < loreLines.size(); i++) {
+                if (i > 0) {
+                    loreHtml.append("<br>");
+                }
+                loreHtml.append(loreLines.get(i));
+            }
+            loreHtml.append("</p>");
+            jsonOutput.addProperty("minecraft:lore", trimHtml(loreHtml.toString()));
+        }
+
+        jsonOutput.add("minecraft:enchantments", enchantmentsArray);
+
+        // Get item name (registry key)
+        var registryKey = heldItem.getRegistryEntry().getKey();
+        registryKey.ifPresent(itemRegistryKey -> jsonOutput.addProperty("minecraft:item_name", itemRegistryKey.getValue().toString()));
+
+        return GSON.toJson(jsonOutput);
     }
 
     /**
@@ -239,9 +317,7 @@ public class ItemReaderModClient implements ClientModInitializer {
                     literalContent = str.substring(start, end);
                 }
             }
-        } catch (Exception e) {
-            // If we can't get literal content, skip it
-        }
+        } catch (Exception ignored) {}
 
         Style style = text.getStyle();
         boolean hasContent = !literalContent.isEmpty();
@@ -391,9 +467,6 @@ public class ItemReaderModClient implements ClientModInitializer {
         return camelCaseString.toString().trim();
     }
 
-    /**
-     * Copies text to system clipboard
-     */
     private void copyToClipboard(MinecraftClient client, String text) {
         try {
             System.out.println(text);
